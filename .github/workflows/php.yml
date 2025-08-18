@@ -176,8 +176,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
-          context: /
-          file: /Dockerfile
+          context: ./
+          file: ./Dockerfile
           push: false
           tags: ngo-help:test
           cache-from: type=gha
@@ -272,7 +272,7 @@ jobs:
       - name: Security check for vulnerable dependencies
         uses: symfonycorp/security-checker-action@v4
         with:
-          lock: /composer.lock
+          lock: ./composer.lock
 
       - name: Check composer packages
         working-directory: ./
