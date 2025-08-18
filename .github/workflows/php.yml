@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, development, gilbert]
     paths:
-      - "backend/**"
+      - "/**"
       - ".github/workflows/php.yml"
   pull_request:
     branches: [main, development, gilbert]
@@ -58,7 +58,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: ngo_help_test
+          MYSQL_DATABASE: password
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3

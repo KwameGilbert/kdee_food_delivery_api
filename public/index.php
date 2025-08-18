@@ -87,7 +87,7 @@ $app->add(new ContentLengthMiddleware());
 
 // Default welcome route
 $app->get('/', function ($request, $response) {
-    $data = ['message' => 'Welcome to Hotel Management and Booking API', 'status' => 'running'];
+    $data = ['status' => 'running', 'message' => 'Welcome to your API'];
     $payload = json_encode($data);
     $response->getBody()->write($payload);
     return $response->withHeader('Content-Type', 'application/json');

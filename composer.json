@@ -23,9 +23,6 @@
     "ramsey/uuid": "^4.8",
     "respect/validation": "^2.4"
   },
-  "require-dev": {
-    "monolog/monolog": "^3.9"
-  },
   "authors": [
     {
       "name": "Gilbert Elikplim Kukah",
