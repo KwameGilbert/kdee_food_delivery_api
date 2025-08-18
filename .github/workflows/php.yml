@@ -29,23 +29,23 @@ jobs:
           tools: composer:v2
 
       - name: Validate composer.json and composer.lock
-        working-directory: /
+        working-directory: ./
         run: composer validate --strict
 
       - name: Cache Composer packages
         uses: actions/cache@v3
         with:
-          path: /vendor
+          path: ./vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-
 
       - name: Install dependencies
-        working-directory: /
+        working-directory: ./
         run: composer install --prefer-dist --no-progress
 
       - name: Check PHP syntax
-        working-directory: /
+        working-directory: ./
         run: find . -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 php -l
 
   test:
@@ -77,17 +77,17 @@ jobs:
       - name: Cache Composer packages
         uses: actions/cache@v3
         with:
-          path: /vendor
+          path: ./vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-
 
       - name: Install dependencies
-        working-directory: /
+        working-directory: ./
         run: composer install --prefer-dist --no-progress
 
       - name: Create environment file
-        working-directory: /
+        working-directory: ./
         run: |
           cp .env.example .env
           sed -i 's/DB_HOST=localhost/DB_HOST=127.0.0.1/g' .env
@@ -97,11 +97,11 @@ jobs:
           sed -i 's/ENVIRONMENT=production/ENVIRONMENT=testing/g' .env
 
       - name: Create log directory
-        working-directory: /
+        working-directory: ./
         run: mkdir -p src/logs/app src/logs/http src/logs/error
 
       - name: Run test suite
-        working-directory: /
+        working-directory: ./
         run: |
           if [ -f vendor/bin/phpunit ]; then
             vendor/bin/phpunit --coverage-text
@@ -129,17 +129,17 @@ jobs:
       - name: Cache Composer packages
         uses: actions/cache@v3
         with:
-          path: /vendor
+          path: ./vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-
 
       - name: Install dependencies
-        working-directory: /
+        working-directory: ./
         run: composer install --prefer-dist --no-progress
 
       - name: Check code style
-        working-directory: /
+        working-directory: ./
         continue-on-error: true
         run: |
           if [ -f vendor/bin/php-cs-fixer ]; then
@@ -151,7 +151,7 @@ jobs:
           fi
 
       - name: Run static analysis
-        working-directory: /
+        working-directory: ./
         continue-on-error: true
         run: |
           if [ -f vendor/bin/phpstan ]; then
@@ -209,11 +209,11 @@ jobs:
           tools: composer:v2
 
       - name: Install dependencies
-        working-directory: /
+        working-directory: ./
         run: composer install --prefer-dist --no-progress
 
       - name: Create environment file
-        working-directory: /
+        working-directory: ./
         run: |
           cp .env.example .env
           sed -i 's/DB_HOST=localhost/DB_HOST=127.0.0.1/g' .env
@@ -223,11 +223,11 @@ jobs:
           sed -i 's/ENVIRONMENT=development/ENVIRONMENT=testing/g' .env
 
       - name: Create log directory
-        working-directory: /
+        working-directory: ./
         run: mkdir -p src/logs/app src/logs/http src/logs/error
 
       - name: Test application bootstrap
-        working-directory: /
+        working-directory: ./
         run: |
           # Start PHP built-in server in the background
           php -S localhost:8080 -t public &
@@ -266,7 +266,7 @@ jobs:
           tools: composer:v2, composer-normalize, composer-require-checker
 
       - name: Install dependencies
-        working-directory: /
+        working-directory: ./
         run: composer install --prefer-dist --no-progress
 
       - name: Security check for vulnerable dependencies
@@ -275,7 +275,7 @@ jobs:
           lock: /composer.lock
 
       - name: Check composer packages
-        working-directory: /
+        working-directory: ./
         continue-on-error: true
         run: |
           if command -v composer-require-checker &> /dev/null; then
