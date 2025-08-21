@@ -15,7 +15,6 @@ use Dotenv\Dotenv;
 use Slim\Middleware\ContentLengthMiddleware;
 
 require_once MIDDLEWARE . 'RequestResponseLoggerMiddleware.php';
-require_once MIDDLEWARE . 'ActivityLoggerMiddleware.php';
 require_once HELPER . 'ErrorHandler.php';
 require_once HELPER . 'LoggerFactory.php';
 
@@ -63,9 +62,6 @@ if ($container->has('httpLogger')) {
     $app->add(new RequestResponseLoggerMiddleware($container->get('httpLogger')));
 }
 
-// Register activity logger middleware for certain routes
-$app->add(new ActivityLoggerMiddleware()); // Make sure auth middleware runs first
-
 // Add CORS middleware FIRST, before anything else
 $app->add(function ($request, $handler) {
     $response = $handler->handle($request);
@@ -94,7 +90,8 @@ $app->add(new ContentLengthMiddleware());
 
 // Default welcome route
 $app->get('/', function ($request, $response) {
-    $data = ['message' => 'Welcome to Persons With Disability Management System API', 'status' => 'running'];
+    $data = ['status' => 'running',
+            'message' => 'Welcome to the ' . $_ENV['APP_NAME']];
     $payload = json_encode($data);
     $response->getBody()->write($payload);
     return $response->withHeader('Content-Type', 'application/json');
