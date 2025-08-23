@@ -62,6 +62,19 @@ class Addresses
         }
     }
 
+    public function getAll(): array
+    {
+        try {
+            $sql = "SELECT id, user_id, name, contact_number, address_line, landmark, latitude, longitude, is_default, created_at FROM {$this->tableName} ORDER BY is_default DESC, id DESC";
+            $stmt = $this->db->prepare($sql);
+            if (!$this->executeQuery($stmt)) return [];
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (PDOException $e) {
+            $this->lastError = 'Failed to get addresses: ' . $e->getMessage();
+            return [];
+        }
+    }
+
     public function create(int $userId, array $data): int|false
     {
         try {

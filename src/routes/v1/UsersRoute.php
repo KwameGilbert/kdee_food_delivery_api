@@ -5,9 +5,11 @@ declare(strict_types=1);
 /**
  * Users API Routes
  * 
- * These routes handle user management operations (CRUD), authentication,
- * and password reset flows. Users have a 'role' ENUM field with values 
- * 'admin' or 'officer' as defined in the database schema.
+ * These routes handle user management operations (CRUD) and authentication.
+ * Password reset via OTP is declared but the current Users model does not
+ * persist OTPs; controller returns a clear error until OTP persistence is
+ * implemented in the model.
+ * Users have a 'role' field; 'user' is treated as a default role when not provided.
  */
 
 require_once CONTROLLER . '/UsersController.php';
@@ -47,7 +49,8 @@ return function ($app): void {
     });
 
     // Create a new user
-    // Expects: {"role":"admin|officer", "username":"...", "email":"...", "password":"...", "profile_image":"..." (optional)}
+    // Expects: {"username":"...", "email":"...", "password":"..."}
+    // Optional: "role": "admin|officer|user", "profile_image": "..."
     $app->post('/v1/users', function ($request, $response) use ($userController) {
         $data = json_decode((string) $request->getBody(), true) ?? [];
         $result = $userController->createUser($data);
