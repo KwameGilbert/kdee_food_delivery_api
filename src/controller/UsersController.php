@@ -72,11 +72,11 @@ class UsersController
 
     /**
      * Create a new user
-     * Expected data: role(string), username, email, password, profile_image(optional)
+     * Expected data: username, email, password. role and profile_image are optional.
      */
     public function createUser(array $data): string
     {
-        $required = ['role', 'username', 'email', 'password'];
+        $required = ['username', 'email', 'password'];
         $missing = [];
         foreach ($required as $field) {
             if (!isset($data[$field]) || $data[$field] === '') {
@@ -90,12 +90,12 @@ class UsersController
             ], JSON_PRETTY_PRINT);
         }
 
-        // Validate role is either 'admin' or 'officer'
-        if (!in_array($data['role'], ['admin', 'officer'])) {
+        // Validate role only if provided
+        if (isset($data['role']) && !in_array($data['role'], ['admin', 'officer', 'user'], true)) {
             return json_encode([
                 'status' => 'error',
                 'field' => 'role',
-                'message' => "Role must be either 'admin' or 'officer'",
+                'message' => "Role must be one of: 'admin', 'officer', 'user'",
             ], JSON_PRETTY_PRINT);
         }
 
@@ -207,23 +207,11 @@ class UsersController
      */
     public function requestPasswordReset(string $email, int $ttlMinutes = 15): string
     {
-        $user = $this->userModel->getByEmail($email);
-        if (!$user) {
-            return json_encode([
-                'status' => 'error',
-                'message' => 'User not found with this email',
-            ], JSON_PRETTY_PRINT);
-        }
-
-        $otp = $this->userModel->generateOtp();
-        $expiresAt = date('Y-m-d H:i:s', time() + ($ttlMinutes * 60));
-        $ok = $this->userModel->setOtpCode($email, $otp, $expiresAt);
-
+        // The current Users model does not implement OTP storage (setOtpCode/findByOtpCode/markOtpAsUsed).
+        // Return a clear error so callers know to implement OTP persistence in the model.
         return json_encode([
-            'status' => $ok ? 'success' : 'error',
-            'message' => $ok ? 'OTP generated and stored' : ('Failed to set OTP: ' . $this->userModel->getLastError()),
-            'otp' => $ok ? $otp : null, // expose here for development; hide in production
-            'expires_at' => $ok ? $expiresAt : null,
+            'status' => 'error',
+            'message' => 'Password reset via OTP is not implemented in the Users model. Implement setOtpCode/findByOtpCode/markOtpAsUsed on the model.',
         ], JSON_PRETTY_PRINT);
     }
 
@@ -232,11 +220,9 @@ class UsersController
      */
     public function verifyOtp(string $otp): string
     {
-        $user = $this->userModel->findByOtpCode($otp);
         return json_encode([
-            'status' => $user ? 'success' : 'error',
-            'user' => $user,
-            'message' => $user ? 'OTP is valid' : 'Invalid or expired OTP',
+            'status' => 'error',
+            'message' => 'OTP verification is not implemented in the Users model. Implement findByOtpCode in the model first.',
         ], JSON_PRETTY_PRINT);
     }
 
@@ -245,22 +231,9 @@ class UsersController
      */
     public function resetPasswordWithOtp(string $otp, string $newPassword): string
     {
-        $user = $this->userModel->findByOtpCode($otp);
-        if (!$user) {
-            return json_encode([
-                'status' => 'error',
-                'message' => 'Invalid or expired OTP',
-            ], JSON_PRETTY_PRINT);
-        }
-
-        $ok = $this->userModel->updatePassword((int) $user['user_id'], $newPassword);
-        if ($ok) {
-            $this->userModel->markOtpAsUsed((int) $user['user_id'], $otp);
-        }
-
         return json_encode([
-            'status' => $ok ? 'success' : 'error',
-            'message' => $ok ? 'Password updated successfully' : ('Failed to update password: ' . $this->userModel->getLastError()),
+            'status' => 'error',
+            'message' => 'Password reset via OTP is not implemented in the Users model. Implement findByOtpCode/updatePassword and OTP persistence to enable this.',
         ], JSON_PRETTY_PRINT);
     }
 
@@ -269,7 +242,32 @@ class UsersController
      */
     public function updatePasswordWithConfirmation(int $userId, string $currentPassword, string $newPassword): string
     {
-        $ok = $this->userModel->updatePasswordWithConfirmation($userId, $currentPassword, $newPassword);
+        $existing = $this->userModel->getById($userId);
+        if (!$existing) {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], JSON_PRETTY_PRINT);
+        }
+
+        // Verify current password by attempting login with the stored username or email
+        $identifier = $existing['username'] ?? $existing['email'] ?? '';
+        if ($identifier === '') {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'Cannot determine login identifier for user',
+            ], JSON_PRETTY_PRINT);
+        }
+
+        $auth = $this->userModel->login($identifier, $currentPassword);
+        if (!$auth) {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'Current password is incorrect',
+            ], JSON_PRETTY_PRINT);
+        }
+
+        $ok = $this->userModel->updatePassword($userId, $newPassword);
         return json_encode([
             'status' => $ok ? 'success' : 'error',
             'message' => $ok ? 'Password updated successfully' : ('Failed to update password: ' . $this->userModel->getLastError()),
@@ -284,14 +282,14 @@ class UsersController
     {
         if (!empty($data['username'])) {
             $existing = $this->userModel->getByUsername($data['username']);
-            if ($existing && (!isset($existing['user_id']) || (int) $existing['user_id'] !== (int) ($currentUserId ?? -1))) {
+            if ($existing && (!isset($existing['id']) || (int) $existing['id'] !== (int) ($currentUserId ?? -1))) {
                 return ['field' => 'username', 'message' => 'Username already in use by another account'];
             }
         }
 
         if (!empty($data['email'])) {
             $existing = $this->userModel->getByEmail($data['email']);
-            if ($existing && (!isset($existing['user_id']) || (int) $existing['user_id'] !== (int) ($currentUserId ?? -1))) {
+            if ($existing && (!isset($existing['id']) || (int) $existing['id'] !== (int) ($currentUserId ?? -1))) {
                 return ['field' => 'email', 'message' => 'Email already in use by another account'];
             }
         }
